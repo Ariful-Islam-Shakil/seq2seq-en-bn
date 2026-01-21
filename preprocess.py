@@ -87,6 +87,7 @@ def preprocess_data(csv_path):
     df = pd.read_csv(csv_path)
     df.columns = ["english", "bangla"]
     df = df.head(20000)
+    df.to_csv("data/raw/en_bn.csv", index=False)
 
     df["english"] = df["english"].apply(clean_text)
     df["bangla"] = df["bangla"].apply(clean_text)

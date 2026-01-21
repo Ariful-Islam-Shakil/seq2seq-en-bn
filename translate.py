@@ -24,8 +24,8 @@ def load_model(src_vocab_size, tgt_vocab_size):
     model.eval()
     return model
 
-def translate_sentence(model, tokenizer, sentence):
-    tokens = tokenizer.encode(sentence)
+def translate_sentence(model, src_tokenizer, tgt_tokenizer, sentence):
+    tokens = src_tokenizer.encode(sentence)
     src_tensor = torch.tensor(tokens).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         encoder_outputs, hidden = model.encode(src_tensor)
@@ -41,7 +41,8 @@ def translate_sentence(model, tokenizer, sentence):
         outputs.append(pred_token)
         input_token = torch.tensor([pred_token]).to(DEVICE)
     
-    return tokenizer.decode(outputs)
+    print(f"\n\ntoken number of output: {len(outputs)}\n\n")
+    return tgt_tokenizer.decode(outputs)
 
 
 
@@ -50,7 +51,8 @@ def main():
     src_vocab = torch.load("tokenizer/src_vocab.pt", weights_only=False)
     tgt_vocab = torch.load("tokenizer/tgt_vocab.pt", weights_only=False)
 
-    tokenizer = Tokenizer(tgt_vocab)
+    src_tokenizer = Tokenizer(src_vocab)
+    tgt_tokenizer = Tokenizer(tgt_vocab)
     model = load_model(len(src_vocab), len(tgt_vocab))
     print("Model loaded successfully!\n")
 
@@ -59,7 +61,7 @@ def main():
         if sentence.lower() in ['exit', 'quit', 'q']:
             print("Exiting the translator. Goodbye!")
             break
-        translation = translate_sentence(model, tokenizer, sentence)
+        translation = translate_sentence(model, src_tokenizer, tgt_tokenizer, sentence)
         print(f"Translated Bengali sentence: {translation}")
 
 if __name__ == "__main__":
