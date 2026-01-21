@@ -1,0 +1,7 @@
+data/raw
+checkpoints/
+__pycache__
+*.zip
+*.txt
+.DS_Store
+*.pt
