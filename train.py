@@ -44,17 +44,54 @@ def load_data():
 # -------------------------
 # Checkpoint Functions
 # -------------------------
-def save_checkpoint(state, epoch, filepath =CHECKPOINT_PATH, drive_path = None):
+def delete_checkpoint(epoch, filepath=CHECKPOINT_PATH, drive_path=DRIVE_PATH):
+    filename = f"seq2seq_en_bn_{epoch}.pt"
+    local_file = os.path.join(filepath, filename)
+    if os.path.exists(local_file):
+        try:
+            os.remove(local_file)
+            print(f"=> Deleted old local checkpoint: {local_file}")
+        except Exception as e:
+            print(f"=> Error deleting local checkpoint: {e}")
+
+    if drive_path and os.path.exists(drive_path):
+        drive_file = os.path.join(drive_path, filename)
+        if os.path.exists(drive_file):
+            try:
+                os.remove(drive_file)
+                print(f"=> Deleted old drive checkpoint: {drive_file}")
+            except Exception as e:
+                print(f"=> Error deleting drive checkpoint: {e}")
+
+def save_checkpoint(state, epoch, filepath=CHECKPOINT_PATH, drive_path=DRIVE_PATH):
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+    
     filename = f"seq2seq_en_bn_{epoch}.pt"
     print(f"=> Saving checkpoint at {filepath}/{filename}")
     torch.save(state, f"{filepath}/{filename}")
+    
     if drive_path:
-        print(f"=> Saving checkpoint at {drive_path}/{filename}")
-        torch.save(state, f"{drive_path}/{filename}")
+        try:
+            if not os.path.exists(drive_path):
+                os.makedirs(drive_path)
+            print(f"=> Saving checkpoint at {drive_path}/{filename}")
+            torch.save(state, f"{drive_path}/{filename}")
+        except Exception as e:
+            print(f"=> Error saving checkpoint to drive: {e}")
+            
+    # Delete (n-2)th checkpoint
+    if epoch > 2:
+        delete_checkpoint(epoch - 2, filepath, drive_path)
 
-def load_checkpoint(checkpoint_path, model, optimizer):
-    print(f"=> Loading checkpoint from {checkpoint_path}")
-    checkpoint = torch.load(checkpoint_path, weights_only=False, map_location=DEVICE)
+def load_checkpoint(checkpoint_path, model, optimizer, epoch=1):
+    file_path = f"{checkpoint_path}/seq2seq_en_bn_{epoch}.pt"
+    if not os.path.exists(file_path):
+        print(f"=> Error: Checkpoint file not found: {file_path}")
+        return 0
+
+    print(f"=> Loading checkpoint from {file_path}")
+    checkpoint = torch.load(file_path, weights_only=False, map_location=DEVICE)
     
     if 'state_dict' in checkpoint:
         model.load_state_dict(checkpoint['state_dict'])
@@ -103,12 +140,22 @@ def main():
 
     parser = argparse.ArgumentParser(description="Train Seq2Seq model")
     parser.add_argument("--resume", action="store_true", help="Resume from latest checkpoint")
+    parser.add_argument("--epoch", type=int, default=None, help="Specific epoch to resume from")
     args = parser.parse_args()
 
     start_epoch = 0
-    if args.resume and os.path.exists(CHECKPOINT_PATH):
-        start_epoch = load_checkpoint(CHECKPOINT_PATH, model, optimizer)
-        print(f"Resuming from epoch {start_epoch + 1}")
+    if args.epoch is not None:
+        start_epoch = load_checkpoint(CHECKPOINT_PATH, model, optimizer, epoch=args.epoch)
+        print(f"Resuming from after epoch {start_epoch}")
+    elif args.resume and os.path.exists(CHECKPOINT_PATH):
+        # If --resume is used without --epoch, try to find the latest
+        checkpoints = [f for f in os.listdir(CHECKPOINT_PATH) if f.startswith("seq2seq_en_bn_") and f.endswith(".pt")]
+        if checkpoints:
+            latest_epoch = max([int(f.split("_")[-1].split(".")[0]) for f in checkpoints])
+            start_epoch = load_checkpoint(CHECKPOINT_PATH, model, optimizer, epoch=latest_epoch)
+            print(f"Resuming from after epoch {start_epoch}")
+        else:
+            print("=> No checkpoints found to resume from.")
 
     print("Training started...\n")
 
@@ -139,7 +186,7 @@ def main():
             'optimizer': optimizer.state_dict(),
             'epoch': epoch + 1
         }
-        save_checkpoint(checkpoint)
+        save_checkpoint(checkpoint, epoch+1)
 
     print("\nTraining complete. Model saved.")
 

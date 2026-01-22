@@ -82,12 +82,14 @@ def build_sequences(df, src_tokenizer, tgt_tokenizer):
 # -------------------------
 # Main Pipeline
 # -------------------------
-def preprocess_data(csv_path):
+def preprocess_data(csv_path, num_samples = None):
     print("Loading CSV...")
     df = pd.read_csv(csv_path)
     df.columns = ["english", "bangla"]
-    df = df.head(20000)
-    df.to_csv("data/raw/en_bn.csv", index=False)
+
+    if num_samples:
+        df = df.head(num_samples)
+        df.to_csv("data/raw/en_bn.csv", index=False)
 
     df["english"] = df["english"].apply(clean_text)
     df["bangla"] = df["bangla"].apply(clean_text)
@@ -137,4 +139,4 @@ if __name__ == "__main__":
     # )
     # print("\n\nCSV created successfully!\n\n")
     
-    preprocess_data("data/raw/en_bn_0.csv")
+    preprocess_data("data/raw/en_bn.csv", num_samples=100000)
