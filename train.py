@@ -32,8 +32,8 @@ DRIVE_PATH = "/content/drive/MyDrive/Seq2Seq_model/checkpoints"
 # -------------------------
 # Data Loader
 # -------------------------
-def load_data():
-    train_src, train_tgt = torch.load("data/processed/train.pt", weights_only=False, size = None)
+def load_data(size):
+    train_src, train_tgt = torch.load("data/processed/train.pt", weights_only=False)
     if size:
         train_src = train_src[:size]
         train_tgt = train_tgt[:size]
@@ -192,5 +192,5 @@ def main(data_size = None):
 
 
 if __name__ == "__main__":
-    data_size = 1000
-    main(data_size)
+    data_size = 100000
+    main()
