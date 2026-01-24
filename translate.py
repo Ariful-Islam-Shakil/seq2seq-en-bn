@@ -20,7 +20,7 @@ def load_model(src_vocab_size, tgt_vocab_size):
     decoder = Decoder(tgt_vocab_size, EMBED_DIM, HIDDEN_DIM, attention)
 
     model = Seq2Seq(encoder, decoder, DEVICE).to(DEVICE)
-    model.load_state_dict(torch.load("checkpoints/seq2seq_en_bn.pt", map_location=DEVICE, weights_only=True))
+    model.load_state_dict(torch.load("checkpoints/seq2seq_en_bn.pt", map_location=DEVICE, weights_only=True)['state_dict'])
     model.eval()
     return model
 

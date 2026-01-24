@@ -22,7 +22,7 @@ from tokenizer.vocab import Vocabulary
 EMBED_DIM = 256
 HIDDEN_DIM = 512
 BATCH_SIZE = 32
-EPOCHS = 32  # Increased default epochs for demonstration
+EPOCHS = 30  # Increased default epochs for demonstration
 LR = 0.001
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 CHECKPOINT_PATH = "checkpoints"
@@ -33,10 +33,10 @@ DRIVE_PATH = "/content/drive/MyDrive/Seq2Seq_model/checkpoints"
 # Data Loader
 # -------------------------
 def load_data():
-    train_src, train_tgt = torch.load("data/processed/train.pt", weights_only=False)
-
-    # train_src = train_src[:10000]
-    # train_tgt = train_tgt[:10000]
+    train_src, train_tgt = torch.load("data/processed/train.pt", weights_only=False, size = None)
+    if size:
+        train_src = train_src[:size]
+        train_tgt = train_tgt[:size]
 
     return train_src, train_tgt
 
@@ -107,9 +107,9 @@ def load_checkpoint(checkpoint_path, model, optimizer, epoch=1):
 # -------------------------
 # Training Pipeline
 # -------------------------
-def main():
+def main(data_size = None):
     print("Loading data...")
-    train_src, train_tgt = load_data()
+    train_src, train_tgt = load_data(data_size)
     print(f"Train samples: {len(train_src)}")
     print(f"Device: {DEVICE}\n\n")
 
@@ -145,14 +145,14 @@ def main():
 
     start_epoch = 0
     if args.epoch is not None:
-        start_epoch = load_checkpoint(CHECKPOINT_PATH, model, optimizer, epoch=args.epoch)
+        start_epoch = load_checkpoint(DRIVE_PATH, model, optimizer, epoch=args.epoch)
         print(f"Resuming from after epoch {start_epoch}")
     elif args.resume and os.path.exists(CHECKPOINT_PATH):
         # If --resume is used without --epoch, try to find the latest
-        checkpoints = [f for f in os.listdir(CHECKPOINT_PATH) if f.startswith("seq2seq_en_bn_") and f.endswith(".pt")]
+        checkpoints = [f for f in os.listdir(DRIVE_PATH) if f.startswith("seq2seq_en_bn_") and f.endswith(".pt")]
         if checkpoints:
             latest_epoch = max([int(f.split("_")[-1].split(".")[0]) for f in checkpoints])
-            start_epoch = load_checkpoint(CHECKPOINT_PATH, model, optimizer, epoch=latest_epoch)
+            start_epoch = load_checkpoint(DRIVE_PATH, model, optimizer, epoch=latest_epoch)
             print(f"Resuming from after epoch {start_epoch}")
         else:
             print("=> No checkpoints found to resume from.")
@@ -192,4 +192,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    data_size = 1000
+    main(data_size)
